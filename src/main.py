@@ -40,32 +40,17 @@ def rotate(image, width, height, angle):
     return rotated
 
 def find_lines_angle(edges) -> int:
-    min_threshold = 1
-    max_threshold = 255
-    MSE_EPSILON = radians(30) ** 2
-    MIN_LINES_COUNT = 50
-    while max_threshold - min_threshold > 1:
-        threshold = (min_threshold + max_threshold) // 2
-        lines = cv2.HoughLines(edges, 1, radians(1), threshold)
-        if lines is None or len(lines) < MIN_LINES_COUNT:
-            min_threshold = threshold
-            continue
-        num_thetas = len(lines)
-        avg_theta = 0.
-        mse_thetas = 0.
-        for line in lines:
-            _, theta = line[0]
-            avg_theta += (theta / num_thetas)
-            mse_thetas += (theta ** 2 / num_thetas)
-        mse_thetas -= (avg_theta ** 2)
-        if mse_thetas > MSE_EPSILON:
-            print(mse_thetas, MSE_EPSILON)
-            max_threshold = threshold
-            continue
-        if avg_theta < radians(30) or avg_theta > radians(150):
-            raise RuntimeError("Error. Direction can't be detected!")
-        return avg_theta
-    raise RuntimeError("Error. Required accuracy can't be reached!")
+    POINTS_THRESHOLD = 100
+    lines = cv2.HoughLines(edges, 1, radians(1), POINTS_THRESHOLD)
+    if lines is None:
+        raise RuntimeError("Error. Required accuracy can't be reached!")
+    num_thetas = len(lines)
+    thetas = [theta for (_, theta), *_ in lines]
+    thetas.sort()
+    avg_theta = thetas[num_thetas // 2]
+    if avg_theta < radians(30) or avg_theta > radians(150):
+        raise RuntimeError("Error. Direction can't be detected!")
+    return avg_theta
 
 if __name__ == "__main__":
     main()
